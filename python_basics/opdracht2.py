@@ -27,4 +27,5 @@ print(aantalSecondeperbeat)
 for x in rhytmList:
     print(x)
     play_obj = wave_obj.play()
+    # calculating the seconds per beat by multiplying them with the note values from rhythmList
     time.sleep(aantalSecondeperbeat * float(x))
