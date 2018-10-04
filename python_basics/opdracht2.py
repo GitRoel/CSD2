@@ -18,7 +18,7 @@ for rhythm in range(0, int(numPlaybackTimes)):
     rhytmList.append(tijd)
 print(rhytmList)
 
-print("which BPM?")
+print("what BPM?")
 bpm = input()
 aantalSecondeperbeat = 60/int(bpm);
 print(aantalSecondeperbeat)
