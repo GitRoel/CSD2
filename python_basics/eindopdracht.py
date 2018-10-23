@@ -2,136 +2,177 @@
 import simpleaudio as sa
 import time
 import random
-
+from midiutil.MidiFile import MIDIFile
+from midiutil import MIDIFile
 #de samples worden gedefinieerd: sample snare is 0, sample hat is 1, sample tom is 2
 samples = [sa.WaveObject.from_wave_file("audio_files/pop.wav"), sa.WaveObject.from_wave_file("audio_files/Dog2.wav"),sa.WaveObject.from_wave_file("audio_files/Laser1.wav") ]
+MyMIDI = MIDIFile(2)
 
 #we vragen welke maatsoort en welk bpm er gebruikt moet worden, en die worden gedefinieerd
 print("wil je maatsoort 3/4 of 5/4?")
 rythmChoice = input()
 
-if rythmChoice != ("3/4" or "5/4"):
-    print("whoops hihi nee kies uit 3/4 of 5/4 ;)")
-    print("wil je maatsoort 3/4 of 5/4?, niet geinig doen")
-    rythmChoice = input()
-    if rythmChoice != ("3/4" or "5/4"):
-        print("jammer dat je dit niet kan doei")
+while rythmChoice not in ("3/4", "5/4"):
+    if rythmChoice == "3/4":
+        print("")
+    elif rythmChoice == "5/4":
+        print("")
+    else:
+        print("sorry doei")
         exit()
 
 print("welk bpm wil je?")
 bpm = int(input())
-
 print("je hebt gekozen voor het bpm", bpm, "en de maatsoort", rythmChoice)
 
-# calculate the duration of a quarter note
+track = 0
+channel  = 9
+velocity = 100
+MyMIDI.addTempo(track, 0, bpm)
+
+#bereken de duratie van een kwartnoot
 quarterNoteDuration = 60 / int(bpm)
-# calculate the duration of a sixteenth note
+#bereken de duratie van een 16de noot
 sixteenthNoteDuration = quarterNoteDuration / 4.0
 
-timestamps = []
+#start van de code-loop main() die later wordt aangevraagd
+def main():
+    timestamps = []
+    #creeert een lijst om de ritme sequence in te bewaren
+    rythmList = []
+    #creeert een lijst om de timestamps sequence in te bewaren
+    timestamps16th = [0]
+    #creeert een lijst met de nootwaarden (16de, 8ste en kwart)
+    noteValues = [0.25, 0.5, 1.0]
+    item = 0
+    #creeert een lijst om de midiDuration sequence in te bewaren
+    midiDurationList = []
+    #creeert een lijst om de midiPitch waardes in te bewaren
+    pitchList = []
 
-# create a list to hold the rhythm sequence
-rythmList = []
-print(rythmList)
+    #3/4 lijst aanmaken
+    if rythmChoice == '3/4':
+        numeratorChoice = 3
+        while sum(rythmList) <= 2:
+            rythmList.append(random.choice(noteValues))
+        if sum(rythmList) == 2:
+            rythmList.append(1)
+        if sum(rythmList) == 2.25:
+            rythmList.append(0.75)
+        if sum(rythmList) == 2.5:
+            rythmList.append(0.5)
+        if sum(rythmList) == 2.75:
+            rythmList.append(0.25)
 
-#nu maken we een functie die de durations omzet naar timestamps16th
-timestamps16th = [0]
+    #5/4 lijst aanmaken
+    if rythmChoice == '5/4':
+        numeratorChoice = 5
+        while sum(rythmList) <= 4:
+            rythmList.append(random.choice(noteValues))
+        if sum(rythmList) == 4:
+            rythmList.append(1)
+        if sum(rythmList) == 4.25:
+            rythmList.append(0.75)
+        if sum(rythmList) == 4.5:
+            rythmList.append(0.5)
+        if sum(rythmList) == 4.75:
+            rythmList.append(0.25)
+    #print("Timestamps opgeteld:", sum(rythmList))
+    #print("ritmesequence:", rythmList)
 
-noteValues = [0.25, 0.5, 1.0]
+    #conversie van ritmewaarden naar timestamps16th
+    for duration in rythmList:
+        timestamp = duration * 4
+        final = timestamps16th[item] + timestamp
+        timestamps16th.append(final)
+        item = item + 1
+    #print("timestamps16th:", timestamps16th)
 
-item = 0
+    #nu zetten we de originele timestamps16th om in de timestamps op basis van het bpm
+    for timestamp in timestamps16th:
+      timestamps.append(timestamp * sixteenthNoteDuration)
+    #print("bpm-timestamp lijst:", timestamps)
 
-#3/4 lijst aanmaken
-if rythmChoice == '3/4':
-    while sum(rythmList) <= 2:
-        rythmList.append(random.choice(noteValues))
+    #nu maken we de samplelijst
+    sampleList = []
 
-    if sum(rythmList) == 2:
-        rythmList.append(1)
+    #random lijst genereren van 0 tot 2 om de smaples te kiezen
+    for timestamp in timestamps:
+        sampleList.append(random.randrange(0, 3, 1))
+    #print("samplelijst:", sampleList)
 
-    if sum(rythmList) == 2.25:
-        rythmList.append(0.75)
+    for sampleNumber in sampleList:
+        if sampleNumber == 0:
+            pitchList.append(35)
+        if sampleNumber == 1:
+            pitchList.append(38)
+        if sampleNumber == 2:
+            pitchList.append(42)
+    #print("pitchList:", pitchList)
 
-    if sum(rythmList) == 2.5:
-        rythmList.append(0.5)
+    #nu gaan we de samplelijst afspelen
+    timestamp = timestamps.pop(0)
+    # retrieve the startime: current time
+    startTime = time.time()
+    keepPlaying = True
 
-    if sum(rythmList) == 2.75:
-        rythmList.append(0.25)
+    # play the sequence
+    while keepPlaying:
+      # retrieve current time
+      currentTime = time.time()
+      # check if the timestamp's time is passed
+      if(currentTime - startTime >= timestamp):
+        # play sample
+        samples[sampleList[0]].play()
+        sampleList.pop(0)
+        # if there are timestamps left in the timestamps list
+        if timestamps:
+          # retrieve the next timestamp
+          timestamp = timestamps.pop(0)
+        else:
+          # list is empty, stop loop
+          keepPlaying = False
+      else:
+        # wait for a very short moment
+        time.sleep(0.001)
 
-#5/4 lijst aanmaken
-if rythmChoice == '5/4':
-    while sum(rythmList) <= 4:
-        rythmList.append(random.choice(noteValues))
+    #beat opslaan en midi conversie:
+    for midiTime in rythmList:
+        midiDurationList.append(midiTime * 2)
+    #print("midi Duration-ritme:", midiDurationList)
 
-    if sum(rythmList) == 4:
-        rythmList.append(1)
+    midiDurationList.append(0)
 
-    if sum(rythmList) == 4.25:
-        rythmList.append(0.75)
+    MyMIDI.addTimeSignature(track, 0, numeratorChoice, 2, 24)
 
-    if sum(rythmList) == 4.5:
-        rythmList.append(0.5)
+    #maakt een midi file aan met de duratie, pitch en timestamps op basis van de eerder gemaakte lijsten
+    for i, x, y in zip(midiDurationList, timestamps16th, pitchList):
+        MyMIDI.addNote(track, channel, y, x * 0.25, i, velocity)
+        #print(i, x, y)
 
-    if sum(rythmList) == 4.75:
-        rythmList.append(0.25)
-
-print("Timestamps opgeteld:", sum(rythmList))
-
-print("ritmesequence:", rythmList)
-
-for duration in rythmList:
-    timestamp = duration * 4
-    final = timestamps16th[item] + timestamp
-    timestamps16th.append(final)
-    item = item + 1
-
-print("timestamps16th:", timestamps16th)
-
-#nu zetten we de originele timestamps om in de timestamps op basis van het bpm
-for timestamp in timestamps16th:
-  timestamps.append(timestamp * sixteenthNoteDuration)
-print("bpm-timestamp lijst:", timestamps)
-
-#nu maken we de samplelijst
-sampleList = []
-
-for timestamp in timestamps:
-    sampleList.append(random.randrange(0, 3, 1))
-
-print("samplelijst:", sampleList)
-
-#nu gaan we de samplelijst afspelen
-
-#NOTE: pop(0) returns and removes the element at index 0
-timestamp = timestamps.pop(0)
-# retrieve the startime: current time
-startTime = time.time()
-keepPlaying = True
-# play the sequence
-
-while keepPlaying:
-  # retrieve current time
-  currentTime = time.time()
-  # check if the timestamp's time is passed
-  if(currentTime - startTime >= timestamp):
-    # play sample
-    samples[sampleList[0]].play()
-    sampleList.pop(0)
-    # if there are timestamps left in the timestamps list
-    if timestamps:
-      # retrieve the next timestamp
-      timestamp = timestamps.pop(0)
-    else:
-      # list is empty, stop loop
-      keepPlaying = False
-  else:
-    # wait for a very short moment
-    time.sleep(0.001)
-
-while True:
-  answer = input('Do you want to continue? (yes/no):')
-  if answer.lower().startswith("y"):
-      print("..generating new rhythm..")
-  elif answer.lower().startswith("n"):
-      print("ok, bye")
-      exit()
+    #vraagt of je de besat wil exporteren als midi file en daarna of je een nieuwe beat wilt maken.
+    while True:
+      midiAnswer = input('wil je deze sequence exporteren als midi file? (yes/no)')
+      if midiAnswer.lower().startswith("y"):
+          print("..exporting rythm to midi file..")
+          #write to MIDIfile
+          with open("bloeb.mid", "wb") as output_file:
+              MyMIDI.writeFile(output_file)
+          while True:
+            answer = input('Do you want to generate a new rythm? (yes/no):')
+            if answer.lower().startswith("y"):
+                print("..generating new rythm..")
+                main()
+            elif answer.lower().startswith("n"):
+                print("ok, bye")
+                exit()
+      elif midiAnswer.lower().startswith("n"):
+        while True:
+          answer = input('Do you want to generate a new rythm? (yes/no):')
+          if answer.lower().startswith("y"):
+              print("..generating new rythm..")
+              main()
+          elif answer.lower().startswith("n"):
+              print("ok, bye")
+              exit()
+main()
